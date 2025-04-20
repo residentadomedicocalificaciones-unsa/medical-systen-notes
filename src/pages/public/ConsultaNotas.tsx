@@ -4,22 +4,7 @@ import type React from "react"
 
 import { useState } from "react"
 import { useQuery } from "@tanstack/react-query"
-import { residenteService, notaService } from "../../services"
-
-interface Nota {
-  id: string
-  conocimientos: number
-  habilidades: number
-  aptitudes: number
-  promedio: number
-  observacion: string
-  responsable: string
-  especialidad: string
-  anioAcademico: string
-  hospital: string
-  rotacion: string
-  fecha: any
-}
+import { residenteService, notaService } from "../../services" // Adjusted path if services folder is one level up
 
 const ConsultaNotas = () => {
   const [email, setEmail] = useState("")
@@ -56,7 +41,7 @@ const ConsultaNotas = () => {
         return
       }
 
-      setResidenteId(residente.id)
+      setResidenteId(residente.id || null)
       setConsultaRealizada(true)
     } catch (err) {
       console.error("Error al consultar notas:", err)
