@@ -9,7 +9,7 @@ const Dashboard = () => {
 
   const { data: residentes = [], isLoading: loadingResidentes } = getAllResidentes()
   const { query: { data: ultimasNotas = [], isLoading: loadingNotas } } = getLatestNotas(5)
-  const { query: { data: estadisticasData = {}, isLoading: loadingEstadisticas } } = getEstadisticasPorEspecialidad()
+  const { query: { isLoading: loadingEstadisticas } } = getEstadisticasPorEspecialidad()
 
   const isLoading = loadingResidentes || loadingNotas || loadingEstadisticas
 
