@@ -4,7 +4,7 @@ const Home = () => {
   return (
     <div className="max-w-4xl mx-auto">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-purple-800 mb-4">Sistema de Evaluación para Residentes Médicos</h1>
+        <h1 className="text-4xl font-bold text-purple-800 mb-4">Notas de Residentes UNSA</h1>
         <p className="text-xl text-gray-600">
           Plataforma para la gestión y consulta de calificaciones de residentes en rotaciones hospitalarias
         </p>

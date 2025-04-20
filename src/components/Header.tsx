@@ -8,7 +8,7 @@ const Header = ({ user }: HeaderProps) => {
   return (
     <header className="bg-white shadow-sm h-16 flex items-center px-6">
       <div className="flex-1">
-        <h1 className="text-xl font-semibold text-gray-800">Sistema de Evaluación para Residentes</h1>
+        <h1 className="text-xl font-semibold text-gray-800">Notas de Residentes UNSA</h1>
       </div>
 
       {user && (

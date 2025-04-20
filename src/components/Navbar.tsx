@@ -14,7 +14,7 @@ const Navbar = () => {
           <div className="flex items-center">
             <Link to="/" className="flex items-center">
               <Logo className="h-10 w-auto" />
-              <span className="ml-2 text-xl font-semibold text-purple-800">Sistema de Evaluación</span>
+              <span className="ml-2 text-xl font-semibold text-purple-800">Notas de Residentes UNSA</span>
             </Link>
           </div>
 
