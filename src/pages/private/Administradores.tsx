@@ -39,7 +39,6 @@ const Administradores = () => {
       for (const adminDoc of adminsSnapshot.docs) {
         // Obtener información del usuario
         const userId = adminDoc.id
-        const userRef = doc(collection(db, "usuarios"), userId)
         const userDoc = await getDocs(query(collection(db, "usuarios"), where("__name__", "==", userId)))
 
         if (!userDoc.empty) {
@@ -99,7 +98,6 @@ const Administradores = () => {
       const userId = usuariosSnapshot.docs[0].id
 
       // Verificar si ya es administrador
-      const adminRef = doc(db, "administradores", userId)
       const adminDoc = await getDocs(query(collection(db, "administradores"), where("__name__", "==", userId)))
 
       if (!adminDoc.empty) {
@@ -108,6 +106,7 @@ const Administradores = () => {
       }
 
       // Agregar como administrador
+      const adminRef = doc(db, "administradores", userId)
       await setDoc(adminRef, {
         createdAt: new Date(),
       })

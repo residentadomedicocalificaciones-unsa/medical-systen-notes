@@ -10,13 +10,13 @@ class ResidenteService extends BaseService<Residente> {
 
   async getByCredentials(email: string, cui: string, dni: string): Promise<Residente | null> {
     try {
-      const q = query(
+      const queryObj = query(
         this.getCollection(),
         where("email", "==", email),
         where("cui", "==", cui),
         where("dni", "==", dni),
       )
-      const querySnapshot = await getDocs(q)
+      const querySnapshot = await getDocs(queryObj)
 
       if (!querySnapshot.empty) {
         const doc = querySnapshot.docs[0]
@@ -35,7 +35,6 @@ class ResidenteService extends BaseService<Residente> {
 
   async getByEspecialidad(especialidad: string): Promise<Residente[]> {
     try {
-      const q = query(this.getCollection(), where("especialidad", "==", especialidad), orderBy("nombre"))
       return this.getAll([where("especialidad", "==", especialidad), orderBy("nombre")])
     } catch (error) {
       console.error("Error al obtener residentes por especialidad:", error)

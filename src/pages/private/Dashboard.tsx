@@ -1,13 +1,15 @@
 "use client"
+
 import { useNotas, useResidentes } from "../../hooks"
+import type { Nota } from "../../types"
 
 const Dashboard = () => {
   const { getAll: getAllResidentes } = useResidentes()
   const { getLatestNotas, getEstadisticasPorEspecialidad } = useNotas()
 
   const { data: residentes = [], isLoading: loadingResidentes } = getAllResidentes()
-  const { data: ultimasNotas = [], isLoading: loadingNotas } = getLatestNotas(5)
-  const { data: estadisticas = {}, isLoading: loadingEstadisticas } = getEstadisticasPorEspecialidad()
+  const { query: { data: ultimasNotas = [], isLoading: loadingNotas } } = getLatestNotas(5)
+  const { query: { data: estadisticasData = {}, isLoading: loadingEstadisticas } } = getEstadisticasPorEspecialidad()
 
   const isLoading = loadingResidentes || loadingNotas || loadingEstadisticas
 
@@ -114,7 +116,7 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {ultimasNotas.map((nota) => {
+                {ultimasNotas.map((nota: Nota) => {
                   // Buscar el nombre del residente
                   const residente = residentes.find((r) => r.id === nota.residenteId)
                   const residenteNombre = residente?.nombre || "Desconocido"
