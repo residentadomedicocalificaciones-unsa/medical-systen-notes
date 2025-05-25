@@ -33,11 +33,20 @@ class ResidenteService extends BaseService<Residente> {
     }
   }
 
-  async getByEspecialidad(especialidad: string): Promise<Residente[]> {
+  async getByEspecialidadId(especialidadId: string): Promise<Residente[]> {
     try {
-      return this.getAll([where("especialidad", "==", especialidad), orderBy("nombre")])
+      return this.getAll([where("especialidadId", "==", especialidadId), orderBy("nombre")])
     } catch (error) {
       console.error("Error al obtener residentes por especialidad:", error)
+      throw error
+    }
+  }
+
+  async getBySedeRotacion(sedeRotacionId: string): Promise<Residente[]> {
+    try {
+      return this.getAll([where("sedeRotacionId", "==", sedeRotacionId), orderBy("nombre")])
+    } catch (error) {
+      console.error("Error al obtener residentes por sede de rotación:", error)
       throw error
     }
   }
@@ -47,6 +56,15 @@ class ResidenteService extends BaseService<Residente> {
       return this.getAll([where("anioAcademico", "==", anio), orderBy("nombre")])
     } catch (error) {
       console.error("Error al obtener residentes por año académico:", error)
+      throw error
+    }
+  }
+
+  async getByAnioIngreso(anio: string): Promise<Residente[]> {
+    try {
+      return this.getAll([where("anioIngreso", "==", anio), orderBy("nombre")])
+    } catch (error) {
+      console.error("Error al obtener residentes por año de ingreso:", error)
       throw error
     }
   }

@@ -1,17 +1,20 @@
 "use client"
 
-import { useNotas, useResidentes } from "../../hooks"
+import { useNotas, useResidentes, useEspecialidades } from "../../hooks"
 import type { Nota } from "../../types"
 
 const Dashboard = () => {
   const { getAll: getAllResidentes } = useResidentes()
-  const { getLatestNotas, getEstadisticasPorEspecialidad } = useNotas()
+  const { getLatestNotas } = useNotas()
+  const { getAllOrdenadas: getEspecialidades } = useEspecialidades()
 
   const { data: residentes = [], isLoading: loadingResidentes } = getAllResidentes()
-  const { query: { data: ultimasNotas = [], isLoading: loadingNotas } } = getLatestNotas(5)
-  const { query: { isLoading: loadingEstadisticas } } = getEstadisticasPorEspecialidad()
+  const {
+    query: { data: ultimasNotas = [], isLoading: loadingNotas },
+  } = getLatestNotas(5)
+  const { data: especialidades = [], isLoading: loadingEspecialidades } = getEspecialidades()
 
-  const isLoading = loadingResidentes || loadingNotas || loadingEstadisticas
+  const isLoading = loadingResidentes || loadingNotas || loadingEspecialidades
 
   if (isLoading) {
     return (
@@ -21,8 +24,16 @@ const Dashboard = () => {
     )
   }
 
-  // Obtener especialidades únicas
-  const especialidades = [...new Set(residentes.map((r) => r.especialidad))]
+  // Funciones helper para obtener nombres
+  const getEspecialidadNombre = (especialidadId: string) => {
+    const especialidad = especialidades.find((e) => e.id === especialidadId)
+    return especialidad ? especialidad.nombre : "Especialidad no encontrada"
+  }
+
+  // Obtener especialidades únicas de los residentes
+  const especialidadesUnicas = [...new Set(residentes.map((r) => r.especialidadId))]
+    .map((id) => getEspecialidadNombre(id))
+    .filter((nombre) => nombre !== "Especialidad no encontrada")
 
   // Obtener años académicos únicos
   const aniosAcademicos = [...new Set(residentes.map((r) => r.anioAcademico))]
@@ -65,7 +76,7 @@ const Dashboard = () => {
             </div>
             <div className="ml-4">
               <h2 className="text-xl font-semibold">Especialidades</h2>
-              <p className="text-3xl font-bold">{especialidades.length}</p>
+              <p className="text-3xl font-bold">{especialidadesUnicas.length}</p>
             </div>
           </div>
         </div>
@@ -163,16 +174,18 @@ const Dashboard = () => {
         <div className="card">
           <h2 className="text-xl font-semibold text-gray-800 mb-4">Distribución por Especialidad</h2>
 
-          {especialidades.length > 0 ? (
+          {especialidadesUnicas.length > 0 ? (
             <div>
-              {especialidades.map((especialidad) => {
-                const count = residentes.filter((r) => r.especialidad === especialidad).length
+              {especialidadesUnicas.map((especialidadNombre) => {
+                const count = residentes.filter(
+                  (r) => getEspecialidadNombre(r.especialidadId) === especialidadNombre,
+                ).length
                 const percentage = (count / residentes.length) * 100
 
                 return (
-                  <div key={especialidad} className="mb-4">
+                  <div key={especialidadNombre} className="mb-4">
                     <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-700">{especialidad}</span>
+                      <span className="text-sm font-medium text-gray-700">{especialidadNombre}</span>
                       <span className="text-sm font-medium text-gray-700">
                         {count} ({percentage.toFixed(1)}%)
                       </span>

@@ -27,22 +27,23 @@ export const useResidentes = () => {
     }
   }, [])
 
-  const getById = (id: string | undefined) => {
-    return useQuery(getByIdQuery(id))
-  }
-
-  // Obtener residentes por especialidad
-  const getByEspecialidadQuery = useCallback((especialidad: string) => {
+  // Obtener residentes por especialidad ID
+  const getByEspecialidadIdQuery = useCallback((especialidadId: string) => {
     return {
-      queryKey: ["residentes", "especialidad", especialidad],
-      queryFn: () => residenteService.getByEspecialidad(especialidad),
-      enabled: !!especialidad,
+      queryKey: ["residentes", "especialidad", especialidadId],
+      queryFn: () => residenteService.getByEspecialidadId(especialidadId),
+      enabled: !!especialidadId,
     }
   }, [])
 
-  const getByEspecialidad = (especialidad: string) => {
-    return useQuery(getByEspecialidadQuery(especialidad))
-  }
+  // Obtener residentes por sede de rotación
+  const getBySedeRotacionQuery = useCallback((sedeRotacionId: string) => {
+    return {
+      queryKey: ["residentes", "sedeRotacion", sedeRotacionId],
+      queryFn: () => residenteService.getBySedeRotacion(sedeRotacionId),
+      enabled: !!sedeRotacionId,
+    }
+  }, [])
 
   // Obtener residentes por año académico
   const getByAnioAcademicoQuery = useCallback((anio: string) => {
@@ -53,9 +54,14 @@ export const useResidentes = () => {
     }
   }, [])
 
-  const getByAnioAcademico = (anio: string) => {
-    return useQuery(getByAnioAcademicoQuery(anio))
-  }
+  // Obtener residentes por año de ingreso
+  const getByAnioIngresoQuery = useCallback((anio: string) => {
+    return {
+      queryKey: ["residentes", "anioIngreso", anio],
+      queryFn: () => residenteService.getByAnioIngreso(anio),
+      enabled: !!anio,
+    }
+  }, [])
 
   // Crear un nuevo residente
   const create = useMutation({
@@ -91,18 +97,30 @@ export const useResidentes = () => {
     }
   }, [])
 
-  const checkDuplicates = (email: string, cui: string, dni: string, excludeId?: string) => {
-    return useQuery(checkDuplicatesQuery(email, cui, dni, excludeId))
+  const residentesQueries = {
+    getAllQuery,
+    getByIdQuery,
+    getByEspecialidadIdQuery,
+    getBySedeRotacionQuery,
+    getByAnioAcademicoQuery,
+    getByAnioIngresoQuery,
+    checkDuplicatesQuery,
   }
 
   return {
     getAll,
-    getById,
-    getByEspecialidad,
-    getByAnioAcademico,
+    getById: (id: string | undefined) => queryClient.getQueryData(["residentes", id]),
+    getByEspecialidadId: (especialidadId: string) =>
+      queryClient.getQueryData(["residentes", "especialidad", especialidadId]),
+    getBySedeRotacion: (sedeRotacionId: string) =>
+      queryClient.getQueryData(["residentes", "sedeRotacion", sedeRotacionId]),
+    getByAnioAcademico: (anio: string) => queryClient.getQueryData(["residentes", "anioAcademico", anio]),
+    getByAnioIngreso: (anio: string) => queryClient.getQueryData(["residentes", "anioIngreso", anio]),
     create,
     update,
     remove,
-    checkDuplicates,
+    checkDuplicates: (email: string, cui: string, dni: string, excludeId?: string) =>
+      queryClient.getQueryData(["residentes", "duplicates", email, cui, dni, excludeId]),
+    residentesQueries,
   }
 }

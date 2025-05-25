@@ -125,7 +125,10 @@ const ConsultaNotas = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Rotación/Servicio
+                    Fecha
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Servicio
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Hospital
@@ -142,21 +145,39 @@ const ConsultaNotas = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Promedio
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {notas.map((nota) => {
-                  // Formatear la fecha
-                  const fecha =
-                    nota.fecha instanceof Date
-                      ? nota.fecha.toLocaleDateString()
-                      : nota.fecha?.toDate?.().toLocaleDateString() || "Fecha desconocida"
+                  // Formatear la fecha para mostrar MAYO/2025
+                  const fecha = (() => {
+                    const fechaObj = nota.fecha instanceof Date ? nota.fecha : nota.fecha?.toDate?.()
+                    if (!fechaObj) return "Fecha desconocida"
+
+                    const meses = [
+                      "Enero",
+                      "Febrero",
+                      "Marzo",
+                      "Abril",
+                      "Mayo",
+                      "Junio",
+                      "Julio",
+                      "Agosto",
+                      "Septiembre",
+                      "Octubre",
+                      "Noviembre",
+                      "Diciembre",
+                    ]
+
+                    const mes = meses[fechaObj.getMonth()]
+                    const año = fechaObj.getFullYear()
+
+                    return `${mes}/${año}`
+                  })()
 
                   return (
                     <tr key={nota.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{fecha}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{nota.rotacion}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{nota.hospital}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -179,7 +200,6 @@ const ConsultaNotas = () => {
                           {nota.promedio.toFixed(2)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{fecha}</td>
                     </tr>
                   )
                 })}

@@ -1,5 +1,5 @@
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
+import { StrictMode } from "react"
+import { createRoot } from "react-dom/client"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import { AuthProvider } from "./context/AuthContext"
@@ -17,6 +17,9 @@ import RegistroNotas from "./pages/private/RegistroNotas"
 import Residentes from "./pages/private/Residentes"
 import Administradores from "./pages/private/Administradores"
 import Login from "./pages/auth/Login"
+import Sedes from "./pages/private/Sedes"
+import Especialidades from "./pages/private/Especialidades"
+import Docentes from "./pages/private/Docentes"
 
 // Protección de rutas
 import ProtectedRoute from "./components/ProtectedRoute"
@@ -70,6 +73,18 @@ const router = createBrowserRouter([
       {
         path: "administradores",
         element: <Administradores />,
+      },
+      {
+        path: "sedes",
+        element: <Sedes />,
+      },
+      {
+        path: "especialidades",
+        element: <Especialidades />,
+      },
+      {
+        path: "docentes",
+        element: <Docentes />,
       },
     ],
   },
