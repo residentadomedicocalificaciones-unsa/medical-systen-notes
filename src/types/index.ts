@@ -5,13 +5,17 @@ export interface Usuario {
   nombre: string;
   email: string;
   photoURL?: string;
+  adminStatus?: "activo" | "pendiente";
   createdAt?: Timestamp | Date;
   updatedAt?: Timestamp | Date;
 }
 
 export interface Administrador {
   id?: string;
+  email?: string;
+  activo?: boolean;
   createdAt?: Timestamp | Date;
+  activatedAt?: Timestamp | Date;
 }
 
 export interface Residente {

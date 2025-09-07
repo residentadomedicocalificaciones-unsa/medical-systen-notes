@@ -1,50 +1,77 @@
-import { query, where, getDocs, limit } from "firebase/firestore"
-import type { Usuario } from "../types"
-import { BaseService } from "./base.service"
+import { query, where, getDocs, limit, doc, getDoc } from "firebase/firestore";
+import type { Usuario } from "../types";
+import { BaseService } from "./base.service";
+import { db } from "../firebase/config";
 
 class UsuarioService extends BaseService<Usuario> {
   constructor() {
-    super("usuarios")
+    super("usuarios");
   }
 
   async getByEmail(email: string): Promise<Usuario | null> {
     try {
-      const q = query(this.getCollection(), where("email", "==", email), limit(1))
-      const querySnapshot = await getDocs(q)
+      console.log(`🔍 Buscando usuario por email: ${email}`);
+
+      const q = query(
+        this.getCollection(),
+        where("email", "==", email),
+        limit(1)
+      );
+      const querySnapshot = await getDocs(q);
 
       if (!querySnapshot.empty) {
-        const doc = querySnapshot.docs[0]
-        return {
+        const doc = querySnapshot.docs[0];
+        const usuario = {
           id: doc.id,
           ...doc.data(),
-        } as Usuario
+        } as Usuario;
+
+        console.log(`✅ Usuario encontrado: ${email}`);
+        return usuario;
       }
 
-      return null
+      console.log(`❌ Usuario no encontrado: ${email}`);
+      return null;
     } catch (error) {
-      console.error("Error al obtener usuario por email:", error)
-      throw error
+      console.error("❌ Error al obtener usuario por email:", error);
+      throw error;
     }
   }
 
   async createUserIfNotExists(user: Usuario): Promise<Usuario> {
     try {
+      console.log(`👤 Verificando/creando usuario: ${user.email}`);
+
       if (!user.id) {
-        throw new Error("ID de usuario es requerido")
+        throw new Error("ID de usuario es requerido");
       }
 
-      const existingUser = await this.getById(user.id)
+      // Usar getDoc directamente para verificar existencia
+      const userDocRef = doc(db, "usuarios", user.id);
+      const userDoc = await getDoc(userDocRef);
 
-      if (existingUser) {
-        return existingUser
+      if (userDoc.exists()) {
+        console.log(`✅ Usuario ya existe: ${user.email}`);
+        return {
+          id: userDoc.id,
+          ...userDoc.data(),
+        } as Usuario;
       }
 
-      return await this.createWithId(user.id, user)
+      console.log(`➕ Creando nuevo usuario: ${user.email}`);
+      const newUser = await this.createWithId(user.id, {
+        nombre: user.nombre,
+        email: user.email,
+        photoURL: user.photoURL,
+      });
+
+      console.log(`🎉 Usuario creado exitosamente: ${user.email}`);
+      return newUser;
     } catch (error) {
-      console.error("Error al crear usuario si no existe:", error)
-      throw error
+      console.error("❌ Error al crear usuario si no existe:", error);
+      throw error;
     }
   }
 }
 
-export const usuarioService = new UsuarioService()
+export const usuarioService = new UsuarioService();
