@@ -32,11 +32,37 @@ export interface Residente {
   updatedAt?: Timestamp | Date;
 }
 
+// Nuevo: Proceso de Residentado
+export interface ProcesoResidentado {
+  id?: string;
+  nombre: string;
+  descripcion?: string;
+  anioAcademico: string;
+  fechaInicio: Timestamp | Date;
+  fechaFin: Timestamp | Date;
+  duracionMeses: number;
+  activo: boolean;
+  createdAt?: Timestamp | Date;
+  updatedAt?: Timestamp | Date;
+}
+
+// Nuevo: Inscripción de residente a un proceso
+export interface InscripcionProceso {
+  id?: string;
+  procesoId: string;
+  residenteId: string;
+  fechaInscripcion: Timestamp | Date;
+  activo: boolean;
+  createdAt?: Timestamp | Date;
+  updatedAt?: Timestamp | Date;
+}
+
 export interface Nota {
   id?: string;
+  procesoId: string; // Nuevo: vinculado al proceso
   residenteId: string;
-  docenteId: string;
-  fecha: Timestamp | Date;
+  mes: number; // Nuevo: mes del proceso (1-12)
+  encargadoEvaluacion: string;
   vacaciones: boolean;
   tipoAusencia?: string;
   conocimientos: number;
@@ -73,15 +99,12 @@ export interface Especialidad {
   updatedAt?: Timestamp | Date;
 }
 
-export interface Docente {
-  id?: string;
-  apellidosNombres: string;
-  dni: string;
-  correoInstitucional: string;
-  correoPersonal: string;
-  telefono: string;
-  sedeId: string;
-  habilitado: boolean;
-  createdAt?: Timestamp | Date;
-  updatedAt?: Timestamp | Date;
+// Nuevos tipos para vistas combinadas
+export interface ProcesoConDetalles extends ProcesoResidentado {
+  totalInscritos?: number;
+}
+
+export interface InscripcionConDetalles extends InscripcionProceso {
+  residenteNombre?: string;
+  procesoNombre?: string;
 }

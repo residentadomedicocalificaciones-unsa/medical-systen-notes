@@ -1,42 +1,46 @@
-"use client"
+"use client";
 
-import { useNotas, useResidentes, useEspecialidades } from "../../hooks"
-import type { Nota } from "../../types"
+import { useNotas, useResidentes, useEspecialidades } from "../../hooks";
+import type { Nota } from "../../types";
 
 const Dashboard = () => {
-  const { getAll: getAllResidentes } = useResidentes()
-  const { getLatestNotas } = useNotas()
-  const { getAllOrdenadas: getEspecialidades } = useEspecialidades()
+  const { getAll: getAllResidentes } = useResidentes();
+  const { getLatestNotas } = useNotas();
+  const { getAllOrdenadas: getEspecialidades } = useEspecialidades();
 
-  const { data: residentes = [], isLoading: loadingResidentes } = getAllResidentes()
+  const { data: residentes = [], isLoading: loadingResidentes } =
+    getAllResidentes();
   const {
     query: { data: ultimasNotas = [], isLoading: loadingNotas },
-  } = getLatestNotas(5)
-  const { data: especialidades = [], isLoading: loadingEspecialidades } = getEspecialidades()
+  } = getLatestNotas(5);
+  const { data: especialidades = [], isLoading: loadingEspecialidades } =
+    getEspecialidades();
 
-  const isLoading = loadingResidentes || loadingNotas || loadingEspecialidades
+  const isLoading = loadingResidentes || loadingNotas || loadingEspecialidades;
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
       </div>
-    )
+    );
   }
 
   // Funciones helper para obtener nombres
   const getEspecialidadNombre = (especialidadId: string) => {
-    const especialidad = especialidades.find((e) => e.id === especialidadId)
-    return especialidad ? especialidad.nombre : "Especialidad no encontrada"
-  }
+    const especialidad = especialidades.find((e) => e.id === especialidadId);
+    return especialidad ? especialidad.nombre : "Especialidad no encontrada";
+  };
 
   // Obtener especialidades únicas de los residentes
-  const especialidadesUnicas = [...new Set(residentes.map((r) => r.especialidadId))]
+  const especialidadesUnicas = [
+    ...new Set(residentes.map((r) => r.especialidadId)),
+  ]
     .map((id) => getEspecialidadNombre(id))
-    .filter((nombre) => nombre !== "Especialidad no encontrada")
+    .filter((nombre) => nombre !== "Especialidad no encontrada");
 
   // Obtener años académicos únicos
-  const aniosAcademicos = [...new Set(residentes.map((r) => r.anioAcademico))]
+  const aniosAcademicos = [...new Set(residentes.map((r) => r.anioAcademico))];
 
   return (
     <div>
@@ -46,7 +50,12 @@ const Dashboard = () => {
         <div className="card bg-gradient-to-br from-purple-500 to-purple-700 text-white">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-white bg-opacity-30">
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="h-8 w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -65,7 +74,12 @@ const Dashboard = () => {
         <div className="card bg-gradient-to-br from-blue-500 to-blue-700 text-white">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-white bg-opacity-30">
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="h-8 w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -76,7 +90,9 @@ const Dashboard = () => {
             </div>
             <div className="ml-4">
               <h2 className="text-xl font-semibold">Especialidades</h2>
-              <p className="text-3xl font-bold">{especialidadesUnicas.length}</p>
+              <p className="text-3xl font-bold">
+                {especialidadesUnicas.length}
+              </p>
             </div>
           </div>
         </div>
@@ -84,7 +100,12 @@ const Dashboard = () => {
         <div className="card bg-gradient-to-br from-green-500 to-green-700 text-white">
           <div className="flex items-center">
             <div className="p-3 rounded-full bg-white bg-opacity-30">
-              <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="h-8 w-8"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -102,7 +123,9 @@ const Dashboard = () => {
       </div>
 
       <div className="card mb-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Últimas Evaluaciones</h2>
+        <h2 className="text-xl font-semibold text-gray-800 mb-4">
+          Últimas Evaluaciones
+        </h2>
 
         {ultimasNotas.length > 0 ? (
           <div className="overflow-x-auto">
@@ -121,46 +144,42 @@ const Dashboard = () => {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Promedio
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha
-                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {ultimasNotas.map((nota: Nota) => {
                   // Buscar el nombre del residente
-                  const residente = residentes.find((r) => r.id === nota.residenteId)
-                  const residenteNombre = residente?.nombre || "Desconocido"
-
-                  // Formatear la fecha
-                  const fecha =
-                    nota.fecha instanceof Date
-                      ? nota.fecha.toLocaleDateString()
-                      : nota.fecha?.toDate?.().toLocaleDateString() || "Fecha desconocida"
+                  const residente = residentes.find(
+                    (r) => r.id === nota.residenteId
+                  );
+                  const residenteNombre = residente?.nombre || "Desconocido";
 
                   return (
                     <tr key={nota.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {residenteNombre}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{nota.rotacion}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{nota.hospital}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {nota.rotacion}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {nota.hospital}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm">
                         <span
                           className={`px-2 py-1 rounded-full ${
                             nota.promedio >= 14
                               ? "bg-green-100 text-green-800"
                               : nota.promedio >= 11
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-red-100 text-red-800"
+                              ? "bg-yellow-100 text-yellow-800"
+                              : "bg-red-100 text-red-800"
                           }`}
                         >
                           {nota.promedio.toFixed(2)}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{fecha}</td>
                     </tr>
-                  )
+                  );
                 })}
               </tbody>
             </table>
@@ -172,29 +191,38 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="card">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Distribución por Especialidad</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Distribución por Especialidad
+          </h2>
 
           {especialidadesUnicas.length > 0 ? (
             <div>
               {especialidadesUnicas.map((especialidadNombre) => {
                 const count = residentes.filter(
-                  (r) => getEspecialidadNombre(r.especialidadId) === especialidadNombre,
-                ).length
-                const percentage = (count / residentes.length) * 100
+                  (r) =>
+                    getEspecialidadNombre(r.especialidadId) ===
+                    especialidadNombre
+                ).length;
+                const percentage = (count / residentes.length) * 100;
 
                 return (
                   <div key={especialidadNombre} className="mb-4">
                     <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-700">{especialidadNombre}</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {especialidadNombre}
+                      </span>
                       <span className="text-sm font-medium text-gray-700">
                         {count} ({percentage.toFixed(1)}%)
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div className="bg-purple-600 h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
+                      <div
+                        className="bg-purple-600 h-2.5 rounded-full"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           ) : (
@@ -203,27 +231,36 @@ const Dashboard = () => {
         </div>
 
         <div className="card">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Distribución por Año Académico</h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Distribución por Año Académico
+          </h2>
 
           {aniosAcademicos.length > 0 ? (
             <div>
               {aniosAcademicos.map((anio) => {
-                const count = residentes.filter((r) => r.anioAcademico === anio).length
-                const percentage = (count / residentes.length) * 100
+                const count = residentes.filter(
+                  (r) => r.anioAcademico === anio
+                ).length;
+                const percentage = (count / residentes.length) * 100;
 
                 return (
                   <div key={anio} className="mb-4">
                     <div className="flex justify-between mb-1">
-                      <span className="text-sm font-medium text-gray-700">Año {anio}</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        Año {anio}
+                      </span>
                       <span className="text-sm font-medium text-gray-700">
                         {count} ({percentage.toFixed(1)}%)
                       </span>
                     </div>
                     <div className="w-full bg-gray-200 rounded-full h-2.5">
-                      <div className="bg-blue-600 h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
+                      <div
+                        className="bg-blue-600 h-2.5 rounded-full"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
                     </div>
                   </div>
-                )
+                );
               })}
             </div>
           ) : (
@@ -232,7 +269,7 @@ const Dashboard = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Dashboard
+export default Dashboard;

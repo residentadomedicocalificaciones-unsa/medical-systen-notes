@@ -1,30 +1,30 @@
-import { StrictMode } from "react"
-import { createRoot } from "react-dom/client"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { createBrowserRouter, RouterProvider } from "react-router-dom"
-import { AuthProvider } from "./context/AuthContext"
-import "./index.css"
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
+import "./index.css";
 
 // Rutas públicas
-import PublicLayout from "./layouts/PublicLayout"
-import Home from "./pages/public/Home"
-import ConsultaNotas from "./pages/public/ConsultaNotas"
+import PublicLayout from "./layouts/PublicLayout";
+import Home from "./pages/public/Home";
+import ConsultaNotas from "./pages/public/ConsultaNotas";
 
 // Rutas privadas
-import PrivateLayout from "./layouts/PrivateLayout"
-import Dashboard from "./pages/private/Dashboard"
-import RegistroNotas from "./pages/private/RegistroNotas"
-import Residentes from "./pages/private/Residentes"
-import Administradores from "./pages/private/Administradores"
-import Login from "./pages/auth/Login"
-import Sedes from "./pages/private/Sedes"
-import Especialidades from "./pages/private/Especialidades"
-import Docentes from "./pages/private/Docentes"
+import PrivateLayout from "./layouts/PrivateLayout";
+import Dashboard from "./pages/private/Dashboard";
+import RegistroNotas from "./pages/private/RegistroNotas";
+import Residentes from "./pages/private/Residentes";
+import Administradores from "./pages/private/Administradores";
+import Login from "./pages/auth/Login";
+import Sedes from "./pages/private/Sedes";
+import Especialidades from "./pages/private/Especialidades";
+import ProcesosResidentado from "./pages/private/ProcesosResidentado";
 
 // Protección de rutas
-import ProtectedRoute from "./components/ProtectedRoute"
+import ProtectedRoute from "./components/ProtectedRoute";
 
-const queryClient = new QueryClient()
+const queryClient = new QueryClient();
 
 const router = createBrowserRouter([
   {
@@ -83,12 +83,12 @@ const router = createBrowserRouter([
         element: <Especialidades />,
       },
       {
-        path: "docentes",
-        element: <Docentes />,
+        path: "procesos-residentado",
+        element: <ProcesosResidentado />,
       },
     ],
   },
-])
+]);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
@@ -97,5 +97,5 @@ createRoot(document.getElementById("root")!).render(
         <RouterProvider router={router} />
       </AuthProvider>
     </QueryClientProvider>
-  </StrictMode>,
-)
+  </StrictMode>
+);

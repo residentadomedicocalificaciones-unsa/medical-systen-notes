@@ -1,27 +1,26 @@
 "use client";
 
 import type React from "react";
-
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import {
-  useResidentes,
-  useNotas,
-  useDocentes,
-  useEspecialidades,
-} from "../../hooks";
+import { useResidentes, useNotas, useEspecialidades } from "../../hooks";
+import { useProcesosResidentado } from "../../hooks/useProcesosResidentado";
+import { useInscripcionesProceso } from "../../hooks/useInscripcionesProceso";
+import { getMesesProceso, getMesNombrePorNumero } from "../../utils/dateUtils";
 
 const RegistroNotas = () => {
   const { currentUser } = useAuth();
   const { getAll: getAllResidentes } = useResidentes();
   const { getAll: getAllNotas, create: createNota } = useNotas();
-  const { getHabilitados: getDocentes } = useDocentes();
-  const { getAllOrdenadas: getEspecialidades } = useEspecialidades();
+  const { getAll: getEspecialidades } = useEspecialidades();
+  const { getConDetalles } = useProcesosResidentado();
+  const { useGetInscripcionesConDetalles } = useInscripcionesProceso();
 
-  const { data: residentes = [], isLoading } = getAllResidentes();
-  const { data: docentes = [], isLoading: loadingDocentes } = getDocentes();
+  const { data: residentes = [], isLoading: loadingResidentes } =
+    getAllResidentes();
   const { data: especialidades = [], isLoading: loadingEspecialidades } =
     getEspecialidades();
+  const { data: procesos = [], isLoading: loadingProcesos } = getConDetalles;
   const {
     query: { data: notas = [], isLoading: loadingNotas },
   } = getAllNotas();
@@ -30,12 +29,13 @@ const RegistroNotas = () => {
   const [error, setError] = useState<string | null>(null);
 
   // Form fields
+  const [procesoId, setProcesoId] = useState("");
   const [residenteId, setResidenteId] = useState("");
   const [residenteSeleccionado, setResidenteSeleccionado] = useState<any>(null);
   const [busquedaResidente, setBusquedaResidente] = useState("");
   const [mostrarSugerencias, setMostrarSugerencias] = useState(false);
-  const [docenteId, setDocenteId] = useState("");
-  const [fecha, setFecha] = useState("");
+  const [mes, setMes] = useState("");
+  const [encargadoEvaluacion, setEncargadoEvaluacion] = useState("");
   const [vacaciones, setVacaciones] = useState(false);
   const [licenciaMaternidad, setLicenciaMaternidad] = useState(false);
   const [otraAusencia, setOtraAusencia] = useState(false);
@@ -51,17 +51,54 @@ const RegistroNotas = () => {
   const inputRef = useRef<HTMLInputElement>(null);
   const sugerenciasRef = useRef<HTMLDivElement>(null);
 
+  // Hook para obtener residentes inscritos en el proceso seleccionado
+  const inscripcionesQuery = useGetInscripcionesConDetalles(
+    procesoId || undefined
+  );
+  const residentesInscritos = inscripcionesQuery.data || [];
+
+  // Obtener el proceso seleccionado para calcular los meses
+  const procesoSeleccionado = procesos.find((p) => p.id === procesoId);
+  const mesesDisponibles = procesoSeleccionado
+    ? getMesesProceso(
+        procesoSeleccionado.fechaInicio instanceof Date
+          ? procesoSeleccionado.fechaInicio
+          : procesoSeleccionado.fechaInicio.toDate(),
+        procesoSeleccionado.duracionMeses
+      )
+    : [];
+
   const getEspecialidadNombre = (especialidadId: string) => {
     const especialidad = especialidades.find((e) => e.id === especialidadId);
     return especialidad ? especialidad.nombre : "Especialidad no encontrada";
   };
 
-  // Filtrar residentes basado en la búsqueda
-  const residentesFiltrados = residentes
-    .filter((residente) => {
-      const nombreCompleto = `${residente.nombre} ${getEspecialidadNombre(
-        residente.especialidadId
-      )} ${residente.anioAcademico}° año`;
+  const getProcesoNombre = (procesoId: string) => {
+    const proceso = procesos.find((p) => p.id === procesoId);
+    return proceso ? proceso.nombre : "Proceso no encontrado";
+  };
+
+  const getMesNombre = (numeroMes: number, procesoId: string) => {
+    const proceso = procesos.find((p) => p.id === procesoId);
+    if (!proceso) return `Mes ${numeroMes}`;
+
+    const fechaInicio =
+      proceso.fechaInicio instanceof Date
+        ? proceso.fechaInicio
+        : proceso.fechaInicio.toDate();
+
+    return getMesNombrePorNumero(numeroMes, fechaInicio);
+  };
+
+  // Filtrar residentes basado en la búsqueda y proceso seleccionado
+  const residentesFiltrados = residentesInscritos
+    .filter((inscripcion) => {
+      const residente = residentes.find(
+        (r) => r.id === inscripcion.residenteId
+      );
+      if (!residente) return false;
+
+      const nombreCompleto = residente.nombre;
       return nombreCompleto
         .toLowerCase()
         .includes(busquedaResidente.toLowerCase());
@@ -109,16 +146,14 @@ const RegistroNotas = () => {
     return residente ? residente.nombre : "Residente no encontrado";
   };
 
-  const getDocenteNombre = (docenteId: string) => {
-    const docente = docentes.find((d) => d.id === docenteId);
-    return docente ? docente.apellidosNombres : "Docente no encontrado";
-  };
-
-  const handleSeleccionarResidente = (residente: any) => {
-    setResidenteSeleccionado(residente);
-    setResidenteId(residente.id);
-    setBusquedaResidente(residente.nombre);
-    setMostrarSugerencias(false);
+  const handleSeleccionarResidente = (inscripcion: any) => {
+    const residente = residentes.find((r) => r.id === inscripcion.residenteId);
+    if (residente) {
+      setResidenteSeleccionado(residente);
+      setResidenteId(inscripcion.residenteId);
+      setBusquedaResidente(residente.nombre);
+      setMostrarSugerencias(false);
+    }
   };
 
   const handleLimpiarResidente = () => {
@@ -147,7 +182,14 @@ const RegistroNotas = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!residenteId || !docenteId || !fecha || !hospital || !rotacion) {
+    if (
+      !procesoId ||
+      !residenteId ||
+      !mes ||
+      !encargadoEvaluacion.trim() ||
+      !hospital ||
+      !rotacion
+    ) {
       setError("Todos los campos marcados con * son obligatorios");
       return;
     }
@@ -196,9 +238,10 @@ const RegistroNotas = () => {
       const tipoAusenciaFinal = getTipoAusencia();
 
       await createNota.mutateAsync({
+        procesoId,
         residenteId,
-        docenteId,
-        fecha: new Date(fecha),
+        mes: Number(mes),
+        encargadoEvaluacion: encargadoEvaluacion.trim(),
         vacaciones: tieneAusencia,
         tipoAusencia: tipoAusenciaFinal,
         conocimientos: tieneAusencia ? 0 : conocimientosNum,
@@ -215,9 +258,10 @@ const RegistroNotas = () => {
       });
 
       // Resetear formulario
+      setProcesoId("");
       handleLimpiarResidente();
-      setDocenteId("");
-      setFecha("");
+      setMes("");
+      setEncargadoEvaluacion("");
       setVacaciones(false);
       setLicenciaMaternidad(false);
       setOtraAusencia(false);
@@ -237,7 +281,7 @@ const RegistroNotas = () => {
     }
   };
 
-  if (isLoading || loadingDocentes || loadingEspecialidades) {
+  if (loadingResidentes || loadingEspecialidades || loadingProcesos) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"></div>
@@ -276,6 +320,39 @@ const RegistroNotas = () => {
 
         <form onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* Selector de proceso */}
+            <div>
+              <label
+                htmlFor="proceso"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Proceso de Residentado *
+              </label>
+              <select
+                id="proceso"
+                value={procesoId}
+                onChange={(e) => {
+                  setProcesoId(e.target.value);
+                  // Limpiar residente seleccionado al cambiar proceso
+                  handleLimpiarResidente();
+                  // Limpiar mes seleccionado al cambiar proceso
+                  setMes("");
+                }}
+                className="input-field"
+                required
+              >
+                <option value="">Seleccionar proceso</option>
+                {procesos
+                  .filter((p) => p.activo)
+                  .map((proceso) => (
+                    <option key={proceso.id} value={proceso.id}>
+                      {proceso.nombre} - {proceso.anioAcademico}° Año (
+                      {proceso.duracionMeses} meses)
+                    </option>
+                  ))}
+              </select>
+            </div>
+
             {/* Campo de búsqueda de residente */}
             <div className="relative">
               <label
@@ -297,7 +374,12 @@ const RegistroNotas = () => {
                   className={`input-field pr-10 ${
                     residenteSeleccionado ? "bg-green-50 border-green-300" : ""
                   }`}
-                  placeholder="Buscar residente por nombre..."
+                  placeholder={
+                    procesoId
+                      ? "Buscar residente inscrito..."
+                      : "Seleccione un proceso primero"
+                  }
+                  disabled={!procesoId}
                   required
                 />
 
@@ -348,23 +430,30 @@ const RegistroNotas = () => {
                       ref={sugerenciasRef}
                       className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto"
                     >
-                      {residentesFiltrados.map((residente) => (
-                        <button
-                          key={residente.id}
-                          type="button"
-                          onClick={() => handleSeleccionarResidente(residente)}
-                          className="w-full text-left px-4 py-3 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none border-b border-gray-100 last:border-b-0"
-                        >
-                          <div className="font-medium text-gray-900">
-                            {residente.nombre}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {getEspecialidadNombre(residente.especialidadId)} •{" "}
-                            {residente.anioAcademico}° año • CUI:{" "}
-                            {residente.cui}
-                          </div>
-                        </button>
-                      ))}
+                      {residentesFiltrados.map((inscripcion) => {
+                        const residente = residentes.find(
+                          (r) => r.id === inscripcion.residenteId
+                        );
+                        if (!residente) return null;
+
+                        return (
+                          <button
+                            key={inscripcion.id}
+                            type="button"
+                            onClick={() =>
+                              handleSeleccionarResidente(inscripcion)
+                            }
+                            className="w-full text-left px-4 py-3 hover:bg-gray-100 focus:bg-gray-100 focus:outline-none border-b border-gray-100 last:border-b-0"
+                          >
+                            <div className="font-medium text-gray-900">
+                              {residente.nombre}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              CUI: {residente.cui} • DNI: {residente.dni}
+                            </div>
+                          </button>
+                        );
+                      })}
                     </div>
                   )}
 
@@ -377,8 +466,8 @@ const RegistroNotas = () => {
                       className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg p-4"
                     >
                       <div className="text-gray-500 text-center">
-                        No se encontraron residentes que coincidan con "
-                        {busquedaResidente}"
+                        No se encontraron residentes inscritos que coincidan con
+                        "{busquedaResidente}"
                       </div>
                     </div>
                   )}
@@ -396,7 +485,7 @@ const RegistroNotas = () => {
                         {getEspecialidadNombre(
                           residenteSeleccionado.especialidadId
                         )}{" "}
-                        • {residenteSeleccionado.anioAcademico}° año
+                        • {residenteSeleccionado.anioAcademico}° Año
                       </div>
                       <div className="text-xs text-green-600">
                         CUI: {residenteSeleccionado.cui} • DNI:{" "}
@@ -430,40 +519,55 @@ const RegistroNotas = () => {
 
             <div>
               <label
-                htmlFor="docente"
+                htmlFor="mes"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Docente *
+                Mes *
               </label>
               <select
-                id="docente"
-                value={docenteId}
-                onChange={(e) => setDocenteId(e.target.value)}
+                id="mes"
+                value={mes}
+                onChange={(e) => setMes(e.target.value)}
                 className="input-field"
                 required
+                disabled={!procesoId}
               >
-                <option value="">Seleccionar docente</option>
-                {docentes.map((docente) => (
-                  <option key={docente.id} value={docente.id}>
-                    {docente.apellidosNombres}
+                <option value="">
+                  {procesoId
+                    ? "Seleccionar mes"
+                    : "Seleccione un proceso primero"}
+                </option>
+                {mesesDisponibles.map((mesInfo) => (
+                  <option
+                    key={mesInfo.numero}
+                    value={mesInfo.numero.toString()}
+                  >
+                    {mesInfo.nombre}
                   </option>
                 ))}
               </select>
+              {procesoSeleccionado && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Duración del proceso: {procesoSeleccionado.duracionMeses}{" "}
+                  meses
+                </p>
+              )}
             </div>
 
             <div>
               <label
-                htmlFor="fecha"
+                htmlFor="encargadoEvaluacion"
                 className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Fecha *
+                Encargado de la Evaluación *
               </label>
               <input
-                type="date"
-                id="fecha"
-                value={fecha}
-                onChange={(e) => setFecha(e.target.value)}
+                type="text"
+                id="encargadoEvaluacion"
+                value={encargadoEvaluacion}
+                onChange={(e) => setEncargadoEvaluacion(e.target.value)}
                 className="input-field"
+                placeholder="Ej: Dr. Juan Pérez"
                 required
               />
             </div>
@@ -727,13 +831,16 @@ const RegistroNotas = () => {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Proceso
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Residente
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Docente
+                    Mes
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Fecha
+                    Encargado de Evaluación
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Hospital
@@ -760,23 +867,19 @@ const RegistroNotas = () => {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {notas.map((nota) => {
-                  // Formatear la fecha
-                  const fecha =
-                    nota.fecha instanceof Date
-                      ? nota.fecha.toLocaleDateString()
-                      : nota.fecha?.toDate?.().toLocaleDateString() ||
-                        "Fecha desconocida";
-
                   return (
                     <tr key={nota.id}>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {getProcesoNombre(nota.procesoId)}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         {getResidenteNombre(nota.residenteId)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {getDocenteNombre(nota.docenteId)}
+                        {getMesNombre(nota.mes, nota.procesoId)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {fecha}
+                        {nota.encargadoEvaluacion}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {nota.hospital}

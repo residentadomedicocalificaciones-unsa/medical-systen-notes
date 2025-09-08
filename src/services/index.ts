@@ -1,7 +1,8 @@
-export * from "./usuario.service"
-export * from "./administrador.service"
-export * from "./residente.service"
-export * from "./nota.service"
-export * from "./sede.service"
-export * from "./especialidad.service"
-export * from "./docente.service"
+export { usuarioService } from "./usuario.service";
+export { administradorService } from "./administrador.service";
+export { residenteService } from "./residente.service";
+export { notaService } from "./nota.service";
+export { sedeService } from "./sede.service";
+export { especialidadService } from "./especialidad.service";
+export { procesoResidentadoService } from "./proceso-residentado.service";
+export { inscripcionProcesoService } from "./inscripcion-proceso.service";

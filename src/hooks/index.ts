@@ -1,7 +1,8 @@
-export * from "./useResidentes"
-export * from "./useNotas"
-export * from "./useAdministradores"
-export * from "./useUsuarios"
-export * from "./useSedes"
-export * from "./useEspecialidades"
-export * from "./useDocentes"
+export { useUsuarios } from "./useUsuarios";
+export { useAdministradores } from "./useAdministradores";
+export { useResidentes } from "./useResidentes";
+export { useNotas } from "./useNotas";
+export { useSedes } from "./useSedes";
+export { useEspecialidades } from "./useEspecialidades";
+export { useProcesosResidentado } from "./useProcesosResidentado";
+export { useInscripcionesProceso } from "./useInscripcionesProceso";

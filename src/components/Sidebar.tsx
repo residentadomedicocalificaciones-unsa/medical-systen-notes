@@ -1,16 +1,18 @@
-"use client"
+"use client";
 
-import { Link, useLocation } from "react-router-dom"
-import { useAuth } from "../context/AuthContext"
-import Logo from "./Logo"
+import { Link, useLocation } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import Logo from "./Logo";
 
 const Sidebar = () => {
-  const { logout } = useAuth()
-  const location = useLocation()
+  const { logout } = useAuth();
+  const location = useLocation();
 
   const isActive = (path: string) => {
-    return location.pathname === path ? "bg-purple-700 text-white" : "text-gray-700 hover:bg-purple-100"
-  }
+    return location.pathname === path
+      ? "bg-purple-700 text-white"
+      : "text-gray-700 hover:bg-purple-100";
+  };
 
   return (
     <div className="bg-white w-64 shadow-lg flex flex-col">
@@ -18,14 +20,26 @@ const Sidebar = () => {
         <Link to="/admin" className="flex items-center justify-center">
           <Logo className="h-12 w-auto" />
         </Link>
-        <h2 className="text-center text-lg font-semibold mt-2 text-purple-800">Panel Administrativo</h2>
+        <h2 className="text-center text-lg font-semibold mt-2 text-purple-800">
+          Panel Administrativo
+        </h2>
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-2 px-4">
           <li>
-            <Link to="/admin" className={`flex items-center px-4 py-2 rounded-md ${isActive("/admin")}`}>
-              <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <Link
+              to="/admin"
+              className={`flex items-center px-4 py-2 rounded-md ${isActive(
+                "/admin"
+              )}`}
+            >
+              <svg
+                className="h-5 w-5 mr-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -39,9 +53,16 @@ const Sidebar = () => {
           <li>
             <Link
               to="/admin/registro-notas"
-              className={`flex items-center px-4 py-2 rounded-md ${isActive("/admin/registro-notas")}`}
+              className={`flex items-center px-4 py-2 rounded-md ${isActive(
+                "/admin/registro-notas"
+              )}`}
             >
-              <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="h-5 w-5 mr-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -55,9 +76,16 @@ const Sidebar = () => {
           <li>
             <Link
               to="/admin/residentes"
-              className={`flex items-center px-4 py-2 rounded-md ${isActive("/admin/residentes")}`}
+              className={`flex items-center px-4 py-2 rounded-md ${isActive(
+                "/admin/residentes"
+              )}`}
             >
-              <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="h-5 w-5 mr-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -70,10 +98,40 @@ const Sidebar = () => {
           </li>
           <li>
             <Link
-              to="/admin/administradores"
-              className={`flex items-center px-4 py-2 rounded-md ${isActive("/admin/administradores")}`}
+              to="/admin/procesos-residentado"
+              className={`flex items-center px-4 py-2 rounded-md ${isActive(
+                "/admin/procesos-residentado"
+              )}`}
             >
-              <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="h-5 w-5 mr-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+                />
+              </svg>
+              Procesos de Residentado
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/admin/administradores"
+              className={`flex items-center px-4 py-2 rounded-md ${isActive(
+                "/admin/administradores"
+              )}`}
+            >
+              <svg
+                className="h-5 w-5 mr-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -85,8 +143,18 @@ const Sidebar = () => {
             </Link>
           </li>
           <li>
-            <Link to="/admin/sedes" className={`flex items-center px-4 py-2 rounded-md ${isActive("/admin/sedes")}`}>
-              <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <Link
+              to="/admin/sedes"
+              className={`flex items-center px-4 py-2 rounded-md ${isActive(
+                "/admin/sedes"
+              )}`}
+            >
+              <svg
+                className="h-5 w-5 mr-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -100,33 +168,24 @@ const Sidebar = () => {
           <li>
             <Link
               to="/admin/especialidades"
-              className={`flex items-center px-4 py-2 rounded-md ${isActive("/admin/especialidades")}`}
+              className={`flex items-center px-4 py-2 rounded-md ${isActive(
+                "/admin/especialidades"
+              )}`}
             >
-              <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg
+                className="h-5 w-5 mr-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
                 />
               </svg>
               Especialidades
-            </Link>
-          </li>
-          <li>
-            <Link
-              to="/admin/docentes"
-              className={`flex items-center px-4 py-2 rounded-md ${isActive("/admin/docentes")}`}
-            >
-              <svg className="h-5 w-5 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                />
-              </svg>
-              Docentes
             </Link>
           </li>
         </ul>
@@ -137,7 +196,12 @@ const Sidebar = () => {
           onClick={logout}
           className="w-full flex items-center justify-center px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-600 transition-colors"
         >
-          <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            className="h-5 w-5 mr-2"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -149,7 +213,7 @@ const Sidebar = () => {
         </button>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default Sidebar
+export default Sidebar;
