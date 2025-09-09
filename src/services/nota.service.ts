@@ -138,7 +138,7 @@ class NotaService extends BaseService<Nota> {
     }
   }
 
-  // Agregar nuevos métodos para trabajar con procesos
+  // Métodos para trabajar con procesos
 
   async getByProcesoId(procesoId: string): Promise<Nota[]> {
     try {
@@ -181,20 +181,191 @@ class NotaService extends BaseService<Nota> {
     }
   }
 
+  // Validación mejorada para prevenir duplicados
   async validarNotaExistente(
     procesoId: string,
     residenteId: string,
     mes: number
-  ): Promise<boolean> {
+  ): Promise<Nota | null> {
     try {
       const notas = await this.getAll([
         where("procesoId", "==", procesoId),
         where("residenteId", "==", residenteId),
         where("mes", "==", mes),
+        limit(1), // Solo necesitamos saber si existe una
       ]);
-      return notas.length > 0;
+      return notas.length > 0 ? notas[0] : null;
     } catch (error) {
       console.error("Error al validar nota existente:", error);
+      throw error;
+    }
+  }
+
+  // Nuevo: Obtener seguimiento completo de un proceso
+  async getSeguimientoProceso(procesoId: string): Promise<{
+    totalResidentes: number;
+    totalMeses: number;
+    notasRegistradas: number;
+    notasPendientes: number;
+    porcentajeCompletado: number;
+    detallesPorMes: Array<{
+      mes: number;
+      registradas: number;
+      pendientes: number;
+      porcentaje: number;
+    }>;
+  }> {
+    try {
+      // Obtener todas las notas del proceso
+      const notas = await this.getByProcesoId(procesoId);
+
+      // Obtener inscripciones del proceso (necesitamos importar el servicio)
+      const { inscripcionProcesoService } = await import(
+        "./inscripcion-proceso.service"
+      );
+      const inscripciones = await inscripcionProcesoService.getByProcesoId(
+        procesoId
+      );
+
+      // Obtener datos del proceso
+      const { procesoResidentadoService } = await import(
+        "./proceso-residentado.service"
+      );
+      const proceso = await procesoResidentadoService.getById(procesoId);
+
+      if (!proceso) {
+        throw new Error("Proceso no encontrado");
+      }
+
+      const totalResidentes = inscripciones.filter((i) => i.activo).length;
+      const totalMeses = proceso.duracionMeses;
+      const totalNotasEsperadas = totalResidentes * totalMeses;
+      const notasRegistradas = notas.length;
+      const notasPendientes = totalNotasEsperadas - notasRegistradas;
+      const porcentajeCompletado =
+        totalNotasEsperadas > 0
+          ? (notasRegistradas / totalNotasEsperadas) * 100
+          : 0;
+
+      // Calcular detalles por mes
+      const detallesPorMes = [];
+      for (let mes = 1; mes <= totalMeses; mes++) {
+        const notasDelMes = notas.filter((n) => n.mes === mes).length;
+        const pendientesDelMes = totalResidentes - notasDelMes;
+        const porcentajeDelMes =
+          totalResidentes > 0 ? (notasDelMes / totalResidentes) * 100 : 0;
+
+        detallesPorMes.push({
+          mes,
+          registradas: notasDelMes,
+          pendientes: pendientesDelMes,
+          porcentaje: porcentajeDelMes,
+        });
+      }
+
+      return {
+        totalResidentes,
+        totalMeses,
+        notasRegistradas,
+        notasPendientes,
+        porcentajeCompletado,
+        detallesPorMes,
+      };
+    } catch (error) {
+      console.error("Error al obtener seguimiento del proceso:", error);
+      throw error;
+    }
+  }
+
+  // Nuevo: Obtener notas pendientes por residente
+  async getNotasPendientesPorResidente(
+    procesoId: string,
+    residenteId: string
+  ): Promise<number[]> {
+    try {
+      const notasExistentes = await this.getByProcesoYResidente(
+        procesoId,
+        residenteId
+      );
+      const mesesConNotas = notasExistentes.map((n) => n.mes);
+
+      // Obtener duración del proceso
+      const { procesoResidentadoService } = await import(
+        "./proceso-residentado.service"
+      );
+      const proceso = await procesoResidentadoService.getById(procesoId);
+
+      if (!proceso) {
+        throw new Error("Proceso no encontrado");
+      }
+
+      const mesesPendientes = [];
+      for (let mes = 1; mes <= proceso.duracionMeses; mes++) {
+        if (!mesesConNotas.includes(mes)) {
+          mesesPendientes.push(mes);
+        }
+      }
+
+      return mesesPendientes;
+    } catch (error) {
+      console.error("Error al obtener notas pendientes por residente:", error);
+      throw error;
+    }
+  }
+
+  // Nuevo: Obtener resumen de notas por proceso y residente
+  async getResumenNotasResidente(
+    procesoId: string,
+    residenteId: string
+  ): Promise<{
+    totalMeses: number;
+    notasRegistradas: number;
+    notasPendientes: number;
+    porcentajeCompletado: number;
+    promedioGeneral: number;
+    mesesPendientes: number[];
+  }> {
+    try {
+      const notas = await this.getByProcesoYResidente(procesoId, residenteId);
+      const mesesPendientes = await this.getNotasPendientesPorResidente(
+        procesoId,
+        residenteId
+      );
+
+      // Obtener duración del proceso
+      const { procesoResidentadoService } = await import(
+        "./proceso-residentado.service"
+      );
+      const proceso = await procesoResidentadoService.getById(procesoId);
+
+      if (!proceso) {
+        throw new Error("Proceso no encontrado");
+      }
+
+      const totalMeses = proceso.duracionMeses;
+      const notasRegistradas = notas.length;
+      const notasPendientes = mesesPendientes.length;
+      const porcentajeCompletado =
+        totalMeses > 0 ? (notasRegistradas / totalMeses) * 100 : 0;
+
+      // Calcular promedio general (solo notas con evaluación, no ausencias)
+      const notasConEvaluacion = notas.filter((n) => !n.vacaciones);
+      const promedioGeneral =
+        notasConEvaluacion.length > 0
+          ? notasConEvaluacion.reduce((sum, n) => sum + n.promedio, 0) /
+            notasConEvaluacion.length
+          : 0;
+
+      return {
+        totalMeses,
+        notasRegistradas,
+        notasPendientes,
+        porcentajeCompletado,
+        promedioGeneral,
+        mesesPendientes,
+      };
+    } catch (error) {
+      console.error("Error al obtener resumen de notas del residente:", error);
       throw error;
     }
   }

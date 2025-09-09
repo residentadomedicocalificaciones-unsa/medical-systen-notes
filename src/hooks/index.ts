@@ -6,3 +6,4 @@ export { useSedes } from "./useSedes";
 export { useEspecialidades } from "./useEspecialidades";
 export { useProcesosResidentado } from "./useProcesosResidentado";
 export { useInscripcionesProceso } from "./useInscripcionesProceso";
+export { useSeguimientoNotas } from "./useSeguimientoNotas";

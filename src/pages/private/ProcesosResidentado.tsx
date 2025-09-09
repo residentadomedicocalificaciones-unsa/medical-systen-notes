@@ -63,8 +63,8 @@ export default function ProcesosResidentado() {
     try {
       const procesoData = {
         ...formData,
-        fechaInicio: new Date(formData.fechaInicio),
-        fechaFin: new Date(formData.fechaFin),
+        fechaInicio: new Date(formData.fechaInicio + "T00:00:00"),
+        fechaFin: new Date(formData.fechaFin + "T00:00:00"),
       };
 
       if (editingProceso) {
