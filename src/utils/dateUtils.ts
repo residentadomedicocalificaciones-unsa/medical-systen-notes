@@ -1,16 +1,20 @@
+export const formatearFecha = (fecha: Date | any): string => {
+  if (!fecha) return "";
+
+  const fechaObj = fecha instanceof Date ? fecha : fecha.toDate();
+  return fechaObj.toLocaleDateString("es-ES");
+};
+
 export const getMesesProceso = (fechaInicio: Date, duracionMeses: number) => {
   const meses = [];
+  const fecha = new Date(fechaInicio);
 
   for (let i = 0; i < duracionMeses; i++) {
-    const fecha = new Date(
-      fechaInicio.getFullYear(),
-      fechaInicio.getMonth() + i,
-      1
-    );
+    const mesActual = new Date(fecha.getFullYear(), fecha.getMonth() + i, 1);
     meses.push({
       numero: i + 1,
-      fecha: fecha,
-      nombre: formatearMesAño(fecha),
+      fecha: mesActual,
+      nombre: getMesNombrePorNumero(i + 1, fechaInicio),
     });
   }
 
@@ -18,15 +22,6 @@ export const getMesesProceso = (fechaInicio: Date, duracionMeses: number) => {
 };
 
 export const getMesNombrePorNumero = (numeroMes: number, fechaInicio: Date) => {
-  const fecha = new Date(
-    fechaInicio.getFullYear(),
-    fechaInicio.getMonth() + (numeroMes - 1),
-    1
-  );
-  return formatearMesAño(fecha);
-};
-
-const formatearMesAño = (fecha: Date) => {
   const meses = [
     "Enero",
     "Febrero",
@@ -42,62 +37,52 @@ const formatearMesAño = (fecha: Date) => {
     "Diciembre",
   ];
 
+  const fecha = new Date(fechaInicio);
+  fecha.setMonth(fecha.getMonth() + (numeroMes - 1));
+
   const mesNombre = meses[fecha.getMonth()];
   const año = fecha.getFullYear();
 
   return `${mesNombre} ${año}`;
 };
 
+export const formatearMesAño = (fecha: Date): string => {
+  const meses = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre",
+  ];
+
+  return `${meses[fecha.getMonth()]} ${fecha.getFullYear()}`;
+};
+
 export const calcularDiferenciaMeses = (
   fechaInicio: Date,
   fechaFin: Date
 ): number => {
-  const añoInicio = fechaInicio.getFullYear();
-  const mesInicio = fechaInicio.getMonth();
-  const añoFin = fechaFin.getFullYear();
-  const mesFin = fechaFin.getMonth();
+  const inicio = new Date(fechaInicio);
+  const fin = new Date(fechaFin);
 
-  return (añoFin - añoInicio) * 12 + (mesFin - mesInicio) + 1;
+  const diffTime = fin.getTime() - inicio.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const diffMonths = Math.ceil(diffDays / 30);
+
+  return diffMonths + 1; // +1 para incluir el mes de inicio
 };
 
-export const formatearFecha = (fecha: Date | any): string => {
-  if (!fecha) return "";
-
-  let fechaObj: Date;
-
-  if (fecha.toDate && typeof fecha.toDate === "function") {
-    fechaObj = fecha.toDate();
-  } else if (fecha instanceof Date) {
-    fechaObj = fecha;
-  } else {
-    return "";
-  }
-
-  return fechaObj.toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-  });
+export const obtenerMesActual = (): number => {
+  return new Date().getMonth() + 1;
 };
 
-export const formatearFechaHora = (fecha: Date | any): string => {
-  if (!fecha) return "";
-
-  let fechaObj: Date;
-
-  if (fecha.toDate && typeof fecha.toDate === "function") {
-    fechaObj = fecha.toDate();
-  } else if (fecha instanceof Date) {
-    fechaObj = fecha;
-  } else {
-    return "";
-  }
-
-  return fechaObj.toLocaleDateString("es-ES", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+export const obtenerAñoActual = (): number => {
+  return new Date().getFullYear();
 };

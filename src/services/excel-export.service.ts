@@ -1,19 +1,28 @@
-import * as XLSX from "xlsx";
-import type { Nota, Residente, ProcesoResidentado } from "../types";
+import ExcelJS from "exceljs";
+import type {
+  Nota,
+  Residente,
+  ProcesoResidentado,
+  Sede,
+  Especialidad,
+} from "../types";
 import { getMesNombrePorNumero } from "../utils/dateUtils";
 
 export interface ExportData {
   proceso: ProcesoResidentado;
   residentes: Residente[];
   notas: Nota[];
+  sedes: Sede[];
+  especialidades: Especialidad[];
 }
 
 export class ExcelExportService {
-  static exportarNotasProceso(data: ExportData): void {
-    const { proceso, residentes, notas } = data;
+  static async exportarNotasProceso(data: ExportData): Promise<void> {
+    const { proceso, residentes, notas, sedes, especialidades } = data;
 
     // Crear workbook
-    const workbook = XLSX.utils.book_new();
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Evaluaciones");
 
     // Obtener fechas de inicio para calcular nombres de meses
     const fechaInicio =
@@ -21,243 +30,324 @@ export class ExcelExportService {
         ? proceso.fechaInicio
         : proceso.fechaInicio.toDate();
 
+    const fechaFin =
+      proceso.fechaFin instanceof Date
+        ? proceso.fechaFin
+        : proceso.fechaFin.toDate();
+
+    // Crear título principal
+    const titulo = `Evaluación Mensual Asistencial de ${proceso.anioAcademico}° de ${proceso.nombre}`;
+
     // Crear headers dinámicos basados en la duración del proceso
     const mesesHeaders = [];
     for (let i = 1; i <= proceso.duracionMeses; i++) {
       const mesNombre = getMesNombrePorNumero(i, fechaInicio);
-      mesesHeaders.push(`${mesNombre} - Conocimientos`);
-      mesesHeaders.push(`${mesNombre} - Habilidades`);
-      mesesHeaders.push(`${mesNombre} - Aptitudes`);
-      mesesHeaders.push(`${mesNombre} - Promedio`);
-      mesesHeaders.push(`${mesNombre} - Estado`);
+      mesesHeaders.push(mesNombre);
     }
 
     // Headers principales
     const headers = [
       "Nro.",
       "Apellidos y Nombres",
-      "CUI",
-      "DNI",
-      "Especialidad",
-      "Año Académico",
+      "Sede (Hospital)",
       ...mesesHeaders,
-      "Promedio General",
-      "Total Evaluaciones",
-      "Evaluaciones Pendientes",
+      "Promedio Final",
+      "Nota Final (80%)",
     ];
 
-    // Crear datos de filas
-    const rows = residentes.map((residente, index) => {
-      const notasResidente = notas.filter(
-        (n) => n.residenteId === residente.id
-      );
+    // Agrupar residentes por especialidad
+    const residentesPorEspecialidad = new Map<string, Residente[]>();
 
-      // Crear objeto para almacenar notas por mes
-      const notasPorMes: { [key: number]: Nota } = {};
-      notasResidente.forEach((nota) => {
-        notasPorMes[nota.mes] = nota;
-      });
-
-      const row: any[] = [
-        index + 1,
-        residente.nombre,
-        residente.cui,
-        residente.dni,
-        residente.especialidadId || "",
-        residente.anioAcademico,
-      ];
-
-      // Agregar datos de cada mes
-      let sumaPromedios = 0;
-      let countEvaluaciones = 0;
-
-      for (let mes = 1; mes <= proceso.duracionMeses; mes++) {
-        const nota = notasPorMes[mes];
-
-        if (nota) {
-          if (nota.vacaciones) {
-            row.push("-", "-", "-", "-", nota.tipoAusencia || "Vacaciones");
-          } else {
-            row.push(
-              nota.conocimientos.toFixed(2),
-              nota.habilidades.toFixed(2),
-              nota.aptitudes.toFixed(2),
-              nota.promedio.toFixed(2),
-              "Activo"
-            );
-            sumaPromedios += nota.promedio;
-            countEvaluaciones++;
-          }
-        } else {
-          row.push("", "", "", "", "Pendiente");
-        }
+    residentes.forEach((residente) => {
+      const especialidadId = residente.especialidadId || "sin-especialidad";
+      if (!residentesPorEspecialidad.has(especialidadId)) {
+        residentesPorEspecialidad.set(especialidadId, []);
       }
-
-      // Calcular promedio general y estadísticas
-      const promedioGeneral =
-        countEvaluaciones > 0 ? sumaPromedios / countEvaluaciones : 0;
-      const evaluacionesPendientes =
-        proceso.duracionMeses - notasResidente.length;
-
-      row.push(
-        promedioGeneral.toFixed(2),
-        notasResidente.length,
-        evaluacionesPendientes
-      );
-
-      return row;
+      residentesPorEspecialidad.get(especialidadId)!.push(residente);
     });
 
-    // Crear worksheet
-    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    let currentRow = 1;
+
+    // Agregar título
+    worksheet.mergeCells(currentRow, 1, currentRow, headers.length);
+    const titleCell = worksheet.getCell(currentRow, 1);
+    titleCell.value = titulo;
+    titleCell.font = { bold: true, size: 14, color: { argb: "FF000000" } };
+    titleCell.alignment = { horizontal: "center", vertical: "middle" };
+    titleCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFE6E6FA" },
+    };
+    titleCell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    };
+    currentRow++;
+
+    // Agregar fila de fechas
+    worksheet.mergeCells(currentRow, 1, currentRow, headers.length);
+    const dateCell = worksheet.getCell(currentRow, 1);
+    dateCell.value =
+      fechaInicio.toLocaleDateString("es-ES") +
+      " - " +
+      fechaFin.toLocaleDateString("es-ES");
+    dateCell.font = { italic: true, color: { argb: "FF666666" } };
+    dateCell.alignment = { horizontal: "center", vertical: "middle" };
+    dateCell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    };
+    currentRow++;
+
+    // Fila vacía
+    currentRow++;
+
+    // Agregar headers
+    headers.forEach((header, index) => {
+      const headerCell = worksheet.getCell(currentRow, index + 1);
+      headerCell.value = header;
+      headerCell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      headerCell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF366092" },
+      };
+      headerCell.alignment = { horizontal: "center", vertical: "middle" };
+      headerCell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+    currentRow++;
+
+    let numeroOrden = 1;
+
+    // Procesar cada especialidad
+    residentesPorEspecialidad.forEach(
+      (residentesEspecialidad, especialidadId) => {
+        // Encontrar nombre de especialidad
+        const especialidad = especialidades.find(
+          (e) => e.id === especialidadId
+        );
+        const nombreEspecialidad = especialidad?.nombre || "Sin Especialidad";
+
+        // Agregar fila de especialidad
+        worksheet.mergeCells(currentRow, 1, currentRow, headers.length);
+        const especialidadCell = worksheet.getCell(currentRow, 1);
+        especialidadCell.value = nombreEspecialidad.toUpperCase();
+        especialidadCell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+        especialidadCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF4472C4" },
+        };
+        especialidadCell.alignment = {
+          horizontal: "left",
+          vertical: "middle",
+        };
+        especialidadCell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+        currentRow++;
+
+        // Procesar residentes de esta especialidad
+        residentesEspecialidad.forEach((residente) => {
+          const notasResidente = notas.filter(
+            (n) => n.residenteId === residente.id
+          );
+
+          // Crear objeto para almacenar notas por mes
+          const notasPorMes: { [key: number]: Nota } = {};
+          notasResidente.forEach((nota) => {
+            notasPorMes[nota.mes] = nota;
+          });
+
+          // Encontrar sede del residente
+          const sede = sedes.find((s) => s.id === residente.sedeRotacionId);
+          const nombreSede = sede?.nombre || "Sin Sede";
+
+          const rowData: any[] = [numeroOrden, residente.nombre, nombreSede];
+
+          // Agregar datos de cada mes y calcular promedio
+          let sumaPromedios = 0;
+          let countEvaluaciones = 0;
+          const promediosMeses: (number | string)[] = [];
+
+          for (let mes = 1; mes <= proceso.duracionMeses; mes++) {
+            const nota = notasPorMes[mes];
+            if (nota) {
+              if (nota.vacaciones) {
+                const tipoAusencia = nota.tipoAusencia || "Vacaciones";
+                promediosMeses.push(tipoAusencia);
+                // Las ausencias/vacaciones cuentan como 0 para el promedio final
+                sumaPromedios += 0;
+                countEvaluaciones++;
+              } else {
+                const promedio = Number.parseFloat(nota.promedio.toFixed(2));
+                promediosMeses.push(promedio);
+                sumaPromedios += promedio;
+                countEvaluaciones++;
+              }
+            } else {
+              promediosMeses.push("Pendiente");
+              // Las evaluaciones pendientes cuentan como 0
+              sumaPromedios += 0;
+              countEvaluaciones++;
+            }
+          }
+
+          // Agregar promedios de meses
+          rowData.push(...promediosMeses);
+
+          // Calcular promedio final (incluyendo ausencias como 0)
+          const promedioFinal =
+            countEvaluaciones > 0 ? sumaPromedios / countEvaluaciones : 0;
+
+          // Calcular nota final (80% del promedio final)
+          const notaFinal = promedioFinal * 0.8;
+
+          rowData.push(
+            Number.parseFloat(promedioFinal.toFixed(2)),
+            Number.parseFloat(notaFinal.toFixed(2))
+          );
+
+          // Agregar fila de datos
+          rowData.forEach((value, index) => {
+            const cell = worksheet.getCell(currentRow, index + 1);
+            cell.value = value;
+            cell.alignment = { horizontal: "center", vertical: "middle" };
+            cell.border = {
+              top: { style: "thin" },
+              left: { style: "thin" },
+              bottom: { style: "thin" },
+              right: { style: "thin" },
+            };
+          });
+
+          currentRow++;
+          numeroOrden++;
+        });
+      }
+    );
 
     // Configurar anchos de columna
-    const colWidths = [
-      { wch: 5 }, // Nro
-      { wch: 30 }, // Nombres
-      { wch: 12 }, // CUI
-      { wch: 12 }, // DNI
-      { wch: 20 }, // Especialidad
-      { wch: 12 }, // Año
-    ];
+    worksheet.getColumn(1).width = 5; // Nro
+    worksheet.getColumn(2).width = 35; // Nombres
+    worksheet.getColumn(3).width = 25; // Sede
 
     // Agregar anchos para columnas de meses
-    for (let i = 0; i < proceso.duracionMeses * 5; i++) {
-      colWidths.push({ wch: 12 });
+    for (let i = 4; i <= 3 + proceso.duracionMeses; i++) {
+      worksheet.getColumn(i).width = 15;
     }
 
     // Agregar anchos para columnas finales
-    colWidths.push({ wch: 15 }, { wch: 15 }, { wch: 18 });
-
-    worksheet["!cols"] = colWidths;
-
-    // Aplicar estilos a headers
-    const headerRange = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
-    for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
-      const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
-      if (!worksheet[cellAddress]) continue;
-
-      worksheet[cellAddress].s = {
-        font: { bold: true, color: { rgb: "FFFFFF" } },
-        fill: { fgColor: { rgb: "366092" } },
-        alignment: { horizontal: "center", vertical: "center" },
-        border: {
-          top: { style: "thin", color: { rgb: "000000" } },
-          bottom: { style: "thin", color: { rgb: "000000" } },
-          left: { style: "thin", color: { rgb: "000000" } },
-          right: { style: "thin", color: { rgb: "000000" } },
-        },
-      };
-    }
-
-    // Aplicar bordes a todas las celdas con datos
-    for (let row = 0; row <= headerRange.e.r; row++) {
-      for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-        if (!worksheet[cellAddress]) {
-          worksheet[cellAddress] = { v: "", t: "s" };
-        }
-
-        if (!worksheet[cellAddress].s) {
-          worksheet[cellAddress].s = {};
-        }
-
-        worksheet[cellAddress].s.border = {
-          top: { style: "thin", color: { rgb: "000000" } },
-          bottom: { style: "thin", color: { rgb: "000000" } },
-          left: { style: "thin", color: { rgb: "000000" } },
-          right: { style: "thin", color: { rgb: "000000" } },
-        };
-
-        // Centrar contenido numérico
-        if (col > 1 && row > 0) {
-          worksheet[cellAddress].s.alignment = {
-            horizontal: "center",
-            vertical: "center",
-          };
-        }
-      }
-    }
-
-    // Agregar worksheet al workbook
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Evaluaciones");
+    worksheet.getColumn(3 + proceso.duracionMeses + 1).width = 15; // Promedio Final
+    worksheet.getColumn(3 + proceso.duracionMeses + 2).width = 15; // Nota Final
 
     // Crear hoja de resumen
-    const resumenData = [
-      ["RESUMEN DEL PROCESO"],
-      [""],
+    const resumenWorksheet = workbook.addWorksheet("Resumen");
+
+    let resumenRow = 1;
+
+    // Título del resumen
+    const resumenTitleCell = resumenWorksheet.getCell(resumenRow, 1);
+    resumenTitleCell.value = "RESUMEN DEL PROCESO";
+    resumenTitleCell.font = { bold: true, size: 12 };
+    resumenRow += 2;
+
+    // Información del proceso
+    const infoData = [
       ["Proceso:", proceso.nombre],
       ["Año Académico:", `${proceso.anioAcademico}° Año`],
       ["Duración:", `${proceso.duracionMeses} meses`],
       ["Fecha Inicio:", fechaInicio.toLocaleDateString("es-ES")],
-      [
-        "Fecha Fin:",
-        (proceso.fechaFin instanceof Date
-          ? proceso.fechaFin
-          : proceso.fechaFin.toDate()
-        ).toLocaleDateString("es-ES"),
-      ],
-      [""],
-      ["ESTADÍSTICAS"],
-      [""],
-      ["Total Residentes:", residentes.length],
-      ["Total Evaluaciones Registradas:", notas.length],
-      [
-        "Total Evaluaciones Esperadas:",
-        residentes.length * proceso.duracionMeses,
-      ],
-      [
-        "Porcentaje Completado:",
-        `${(
-          (notas.length / (residentes.length * proceso.duracionMeses)) *
-          100
-        ).toFixed(2)}%`,
-      ],
-      [""],
-      ["PROMEDIO POR MES"],
-      [""],
+      ["Fecha Fin:", fechaFin.toLocaleDateString("es-ES")],
     ];
 
-    // Agregar estadísticas por mes
-    for (let mes = 1; mes <= proceso.duracionMeses; mes++) {
-      const notasDelMes = notas.filter((n) => n.mes === mes && !n.vacaciones);
+    infoData.forEach(([label, value]) => {
+      resumenWorksheet.getCell(resumenRow, 1).value = label;
+      resumenWorksheet.getCell(resumenRow, 2).value = value;
+      resumenRow++;
+    });
+
+    resumenRow += 2;
+
+    // Estadísticas por especialidad
+    const estadisticasTitleCell = resumenWorksheet.getCell(resumenRow, 1);
+    estadisticasTitleCell.value = "ESTADÍSTICAS POR ESPECIALIDAD";
+    estadisticasTitleCell.font = { bold: true };
+    resumenRow += 2;
+
+    residentesPorEspecialidad.forEach((residentesEsp, especialidadId) => {
+      const especialidad = especialidades.find((e) => e.id === especialidadId);
+      const nombreEspecialidad = especialidad?.nombre || "Sin Especialidad";
+
+      const notasEspecialidad = notas.filter(
+        (n) =>
+          residentesEsp.some((r) => r.id === n.residenteId) && !n.vacaciones
+      );
+
       const promedio =
-        notasDelMes.length > 0
-          ? notasDelMes.reduce((sum, n) => sum + n.promedio, 0) /
-            notasDelMes.length
+        notasEspecialidad.length > 0
+          ? notasEspecialidad.reduce((sum, n) => sum + n.promedio, 0) /
+            notasEspecialidad.length
           : 0;
 
-      resumenData.push([
-        getMesNombrePorNumero(mes, fechaInicio),
-        `${notasDelMes.length} evaluaciones`,
-        `Promedio: ${promedio.toFixed(2)}`,
-      ]);
-    }
+      resumenWorksheet.getCell(resumenRow, 1).value = nombreEspecialidad;
+      resumenWorksheet.getCell(
+        resumenRow,
+        2
+      ).value = `${residentesEsp.length} residentes`;
+      resumenWorksheet.getCell(
+        resumenRow,
+        3
+      ).value = `Promedio: ${promedio.toFixed(2)}`;
+      resumenRow++;
+    });
 
-    const resumenWorksheet = XLSX.utils.aoa_to_sheet(resumenData);
-    resumenWorksheet["!cols"] = [{ wch: 25 }, { wch: 20 }, { wch: 20 }];
-
-    XLSX.utils.book_append_sheet(workbook, resumenWorksheet, "Resumen");
+    // Configurar anchos de columna del resumen
+    resumenWorksheet.getColumn(1).width = 25;
+    resumenWorksheet.getColumn(2).width = 20;
+    resumenWorksheet.getColumn(3).width = 20;
 
     // Generar nombre de archivo
     const fechaExport = new Date()
       .toLocaleDateString("es-ES")
       .replace(/\//g, "-");
-    const nombreArchivo = `Evaluaciones_${proceso.nombre.replace(
-      /\s+/g,
-      "_"
-    )}_${fechaExport}.xlsx`;
+    const nombreArchivo = `Evaluacion_Mensual_${
+      proceso.anioAcademico
+    }Año_${proceso.nombre.replace(/\s+/g, "_")}_${fechaExport}.xlsx`;
 
     // Descargar archivo
-    XLSX.writeFile(workbook, nombreArchivo);
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = nombreArchivo;
+    link.click();
+    window.URL.revokeObjectURL(url);
   }
 
-  static exportarNotasResidente(
+  static async exportarNotasResidente(
     residente: Residente,
     notas: Nota[],
     proceso: ProcesoResidentado
-  ): void {
-    const workbook = XLSX.utils.book_new();
+  ): Promise<void> {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Evaluaciones");
 
     const fechaInicio =
       proceso.fechaInicio instanceof Date
@@ -279,11 +369,32 @@ export class ExcelExportService {
       "Observaciones",
     ];
 
+    // Agregar headers
+    headers.forEach((header, index) => {
+      const headerCell = worksheet.getCell(1, index + 1);
+      headerCell.value = header;
+      headerCell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      headerCell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF366092" },
+      };
+      headerCell.alignment = { horizontal: "center", vertical: "middle" };
+      headerCell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
     // Crear filas de datos
-    const rows = [];
+    let currentRow = 2;
     for (let mes = 1; mes <= proceso.duracionMeses; mes++) {
       const nota = notas.find((n) => n.mes === mes);
       const mesNombre = getMesNombrePorNumero(mes, fechaInicio);
+
+      const rowData: any[] = [];
 
       if (nota) {
         const fechaEvaluacion =
@@ -291,7 +402,7 @@ export class ExcelExportService {
             ? nota.createdAt.toLocaleDateString("es-ES")
             : nota.createdAt?.toDate?.()?.toLocaleDateString("es-ES") || "";
 
-        rows.push([
+        rowData.push(
           mesNombre,
           fechaEvaluacion,
           nota.encargadoEvaluacion,
@@ -302,32 +413,52 @@ export class ExcelExportService {
           nota.vacaciones ? "-" : nota.habilidades.toFixed(2),
           nota.vacaciones ? "-" : nota.aptitudes.toFixed(2),
           nota.vacaciones ? "-" : nota.promedio.toFixed(2),
-          nota.observacion || "",
-        ]);
+          nota.observacion || ""
+        );
       } else {
-        rows.push([mesNombre, "", "", "", "", "Pendiente", "", "", "", "", ""]);
+        rowData.push(
+          mesNombre,
+          "",
+          "",
+          "",
+          "",
+          "Pendiente",
+          "",
+          "",
+          "",
+          "",
+          ""
+        );
       }
+
+      // Agregar fila de datos
+      rowData.forEach((value, index) => {
+        const cell = worksheet.getCell(currentRow, index + 1);
+        cell.value = value;
+        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+
+      currentRow++;
     }
 
-    // Crear worksheet
-    const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-
-    // Configurar anchos
-    worksheet["!cols"] = [
-      { wch: 20 }, // Mes
-      { wch: 15 }, // Fecha
-      { wch: 25 }, // Encargado
-      { wch: 20 }, // Hospital
-      { wch: 20 }, // Servicio
-      { wch: 15 }, // Estado
-      { wch: 12 }, // Conocimientos
-      { wch: 12 }, // Habilidades
-      { wch: 12 }, // Aptitudes
-      { wch: 12 }, // Promedio
-      { wch: 30 }, // Observaciones
-    ];
-
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Evaluaciones");
+    // Configurar anchos de columna
+    worksheet.getColumn(1).width = 20; // Mes
+    worksheet.getColumn(2).width = 15; // Fecha
+    worksheet.getColumn(3).width = 25; // Encargado
+    worksheet.getColumn(4).width = 20; // Hospital
+    worksheet.getColumn(5).width = 20; // Servicio
+    worksheet.getColumn(6).width = 15; // Estado
+    worksheet.getColumn(7).width = 12; // Conocimientos
+    worksheet.getColumn(8).width = 12; // Habilidades
+    worksheet.getColumn(9).width = 12; // Aptitudes
+    worksheet.getColumn(10).width = 12; // Promedio
+    worksheet.getColumn(11).width = 30; // Observaciones
 
     // Generar nombre de archivo
     const fechaExport = new Date()
@@ -338,6 +469,16 @@ export class ExcelExportService {
       "_"
     )}_${fechaExport}.xlsx`;
 
-    XLSX.writeFile(workbook, nombreArchivo);
+    // Descargar archivo
+    const buffer = await workbook.xlsx.writeBuffer();
+    const blob = new Blob([buffer], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = nombreArchivo;
+    link.click();
+    window.URL.revokeObjectURL(url);
   }
 }

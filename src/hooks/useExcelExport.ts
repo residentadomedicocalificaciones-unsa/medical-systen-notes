@@ -7,6 +7,8 @@ import {
 } from "../services/excel-export.service";
 import { notaService } from "../services/nota.service";
 import { inscripcionProcesoService } from "../services/inscripcion-proceso.service";
+import { sedeService } from "../services/sede.service";
+import { especialidadService } from "../services/especialidad.service";
 import type { Residente, ProcesoResidentado } from "../types";
 
 export const useExcelExport = () => {
@@ -32,10 +34,16 @@ export const useExcelExport = () => {
         inscripciones.some((i) => i.residenteId === r.id && i.activo)
       );
 
+      // Obtener sedes y especialidades
+      const sedes = await sedeService.getAll();
+      const especialidades = await especialidadService.getAll();
+
       const exportData: ExportData = {
         proceso,
         residentes: residentesInscritos,
         notas,
+        sedes,
+        especialidades,
       };
 
       ExcelExportService.exportarNotasProceso(exportData);
