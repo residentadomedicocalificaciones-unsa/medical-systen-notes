@@ -116,8 +116,8 @@ const Residentes = () => {
       return false;
     }
 
-    if (cui.length !== 13 || !/^\d+$/.test(cui)) {
-      setError("El CUI debe tener exactamente 13 dígitos");
+    if (cui.length !== 8 || !/^\d+$/.test(cui)) {
+      setError("El CUI debe tener exactamente 8 dígitos");
       return false;
     }
 
@@ -381,7 +381,9 @@ const Residentes = () => {
                           {getEspecialidadNombre(residente.especialidadId)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {residente.anioAcademico}° Año
+                          {residente.anioAcademico == "Egresado"
+                            ? "Egresado"
+                            : `${residente.anioAcademico}° Año`}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {getSedeNombre(residente.sedeRotacionId || "")}
@@ -540,7 +542,7 @@ const Residentes = () => {
                   htmlFor="cui"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  CUI (13 dígitos) *
+                  CUI (8 dígitos) *
                 </label>
                 <input
                   type="text"
@@ -662,6 +664,7 @@ const Residentes = () => {
                   <option value="3">3° Año</option>
                   <option value="4">4° Año</option>
                   <option value="5">5° Año</option>
+                  <option value="Egresado">Egresado</option>
                 </select>
               </div>
             </div>
@@ -797,7 +800,9 @@ const Residentes = () => {
                       Año Académico
                     </dt>
                     <dd className="text-sm text-gray-900">
-                      {residenteDetalles.anioAcademico}° Año
+                      {residenteDetalles.anioAcademico === "Egresado"
+                        ? "Egresado"
+                        : `${residenteDetalles.anioAcademico}° Año`}
                     </dd>
                   </div>
                 </dl>
