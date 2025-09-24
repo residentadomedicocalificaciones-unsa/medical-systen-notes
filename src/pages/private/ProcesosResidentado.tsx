@@ -170,12 +170,14 @@ export default function ProcesosResidentado() {
   }
 
   if (showInscripciones && selectedProceso) {
+    const rootKey =
+      showInscripciones && selectedProceso ? `insc-${selectedProceso}` : "list";
     const proceso = procesosQuery.data?.find((p) => p.id === selectedProceso);
     const inscripciones = inscripcionesQuery.data || [];
     const residentesDisponibles = residentesDisponiblesQuery.data || [];
 
     return (
-      <div className="space-y-6">
+      <div key={rootKey} className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
