@@ -210,8 +210,7 @@ export class ExcelExportService {
           rowData.push(...promediosMeses);
 
           // Calcular promedio final (incluyendo ausencias como 0)
-          const promedioFinal =
-            countEvaluaciones > 0 ? sumaPromedios / countEvaluaciones : 0;
+          const promedioFinal = countEvaluaciones > 0 ? sumaPromedios / 12 : 0;
 
           // Calcular nota final (80% del promedio final)
           const notaFinal = promedioFinal * 0.8;
